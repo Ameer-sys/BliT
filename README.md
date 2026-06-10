@@ -1,29 +1,29 @@
-# BliT / Pryln Prototype
+# BliT
 
-Pryln is a patient-centered health timeline and medication tracking prototype.
+BliT is a patient-centered health timeline and medication tracking prototype.
 Providers create patient profiles, add medications and records, and patients
 use a familiar digital blister pack to follow today's care plan.
 
 ## What is included
 
+- React + Vite app structure
+- Firebase Auth and Firestore setup points through environment variables
+- Welcome, login, signup, patient dashboard, provider dashboard, timeline, medications, records, and profile pages
 - Patient home screen with a 2x2 digital blister pack
 - Dose detail modal with "mark taken" interaction
-- Patient timeline, medications, and profile views
-- Provider dashboard with quick actions for medication, records, timeline, and access
-- Banking-inspired healthcare visual style: calm teal, white cards, clear hierarchy
+- Banking-inspired healthcare visual style with a BliT logo and calm teal identity
 
 ## Run locally
 
-Open `index.html` in a browser, or serve the folder with any static server.
-
 ```bash
-npx serve .
+npm install
+npm run dev
 ```
 
-## MVP direction
+Copy `.env.example` to `.env` and add Firebase project values when you are ready
+to connect real authentication and Firestore data.
 
-The prototype is intentionally dependency-light so the product direction can be
-validated quickly before wiring Firebase or a full app framework.
+## MVP direction
 
 Recommended build order:
 

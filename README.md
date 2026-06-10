@@ -33,3 +33,17 @@ Recommended build order:
 4. Patient marks dose as taken
 5. Provider adds medical record
 6. Patient views timeline
+
+## Firebase backend model
+
+BliT currently uses Firebase Auth plus Firestore as the backend.
+
+- `users/{uid}`: account profile with `name`, `email`, and `role`
+- `patients/{patientId}`: patient profile with `linkedUserId` and `createdByProviderId`
+- `medications/{medicationId}`: medication plan with `patientId`, `scheduleSlots`, dosage, and instructions
+- `records/{recordId}`: health record with `patientId`, type, title, date, and notes
+- `doseLogs/{logId}`: dose event with `patientId`, `medicationId`, date, slot, status, and `takenAt`
+
+For the MVP, anyone can create a patient or doctor account. A doctor adds a
+patient by email, then medications and records created by that doctor appear on
+the linked patient's side.

@@ -89,8 +89,9 @@ export default function PatientDashboard() {
   if (!patient) {
     return (
       <div className="state-card">
-        No patient profile is linked to this account yet. Add a patients document
-        where linkedUserId equals {currentUser.uid}.
+        No patient profile is linked to this account yet. If you signed up as a
+        patient, refresh once. If a doctor created your account, ask them to add
+        your email to their patient list.
       </div>
     );
   }

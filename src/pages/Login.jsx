@@ -12,8 +12,7 @@ export default function Login() {
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleLogin(event) {
-    event.preventDefault();
+  async function handleLogin(roleChoice) {
     setStatus("");
     setIsSubmitting(true);
 
@@ -22,17 +21,16 @@ export default function Login() {
       const userSnap = await getDoc(doc(db, "users", credential.user.uid));
       const role = userSnap.data()?.role;
 
-      if (role === "provider") {
-        navigate("/provider", { replace: true });
+      if (role === roleChoice) {
+        navigate(roleChoice === "provider" ? "/provider" : "/patient", { replace: true });
         return;
       }
 
-      if (role === "patient") {
-        navigate("/patient", { replace: true });
-        return;
-      }
-
-      setStatus("Signed in, but this account does not have a BliT role yet.");
+      setStatus(
+        role
+          ? `This account is registered as ${role}. Use the ${role === "provider" ? "doctor" : "patient"} sign in.`
+          : "Signed in, but this account does not have a BliT role yet.",
+      );
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -46,7 +44,7 @@ export default function Login() {
       title="Sign in to BliT"
       text="Patients and providers use separate workspaces after sign-in."
     >
-      <form className="auth-form" onSubmit={handleLogin}>
+      <form className="auth-form" onSubmit={(event) => event.preventDefault()}>
         <label>
           Email
           <input
@@ -67,14 +65,19 @@ export default function Login() {
             required
           />
         </label>
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign in"}
-        </button>
+        <div className="split-actions">
+          <button type="button" disabled={isSubmitting} onClick={() => handleLogin("patient")}>
+            {isSubmitting ? "Signing in..." : "Sign in as patient"}
+          </button>
+          <button type="button" disabled={isSubmitting} onClick={() => handleLogin("provider")}>
+            {isSubmitting ? "Signing in..." : "Sign in as doctor"}
+          </button>
+        </div>
         {status && <p className="helper-text error-text">{status}</p>}
-        <p className="helper-text">BliT routes you by the role stored in users/uid.</p>
+        <p className="helper-text">Pick the workspace you created this account for.</p>
       </form>
       <p className="auth-switch">
-        Need access? <Link to="/signup">Create a patient invite</Link>
+        Need an account? <Link to="/signup">Create one</Link>
       </p>
     </AuthLayout>
   );

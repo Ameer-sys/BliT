@@ -1,10 +1,12 @@
 import {
   addDoc,
   collection,
+  doc,
   getDocs,
   limit,
   query,
   serverTimestamp,
+  setDoc,
   where,
 } from "firebase/firestore";
 import { db } from "../firebase.js";
@@ -46,6 +48,52 @@ export async function getPatientForProvider(uid) {
     query(collection(db, "patients"), where("createdByProviderId", "==", uid), limit(1)),
   );
   return withId(snapshot)[0] || null;
+}
+
+export async function getPatientsForProvider(uid) {
+  const snapshot = await getDocs(
+    query(collection(db, "patients"), where("createdByProviderId", "==", uid)),
+  );
+  return withId(snapshot).sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+}
+
+export async function findUserByEmail(email) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const snapshot = await getDocs(
+    query(collection(db, "users"), where("email", "==", normalizedEmail), limit(1)),
+  );
+  return withId(snapshot)[0] || null;
+}
+
+export async function getOrCreatePatientForUser({ patientUser, providerId }) {
+  const existingPatient = await getPatientForUser(patientUser.id);
+
+  if (existingPatient) {
+    await setDoc(
+      doc(db, "patients", existingPatient.id),
+      {
+        createdByProviderId: providerId,
+        linkedUserId: patientUser.id,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+    return { ...existingPatient, createdByProviderId: providerId };
+  }
+
+  const patientRef = doc(collection(db, "patients"));
+  const patient = {
+    name: patientUser.name || patientUser.email,
+    email: patientUser.email,
+    linkedUserId: patientUser.id,
+    createdByProviderId: providerId,
+    patientCode: `BLT-${patientRef.id.slice(0, 6).toUpperCase()}`,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  await setDoc(patientRef, patient);
+  return { id: patientRef.id, ...patient };
 }
 
 export async function getActiveMedications(patientId) {

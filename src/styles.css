@@ -110,7 +110,8 @@ p {
 
 .welcome-nav div,
 .hero-actions,
-.split-actions {
+.split-actions,
+.role-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -356,6 +357,28 @@ p {
 .quiet-link {
   display: inline-flex;
   margin-top: 1rem;
+}
+
+.role-tabs {
+  padding: 0.28rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: white;
+}
+
+.role-tabs button {
+  flex: 1;
+  min-height: 2.6rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.role-tabs button.active {
+  background: var(--black);
+  color: white;
 }
 
 .setup-page {
@@ -678,10 +701,37 @@ p {
 
 .provider-stats,
 .action-grid,
-.records-grid {
+.records-grid,
+.patient-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
+}
+
+.patient-list {
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  margin-bottom: 1rem;
+}
+
+.patient-list button {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 0.9rem;
+  background: white;
+  text-align: left;
+}
+
+.patient-list button.active {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: var(--teal-soft);
+}
+
+.patient-list span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
 }
 
 .provider-stats span {

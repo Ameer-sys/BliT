@@ -5,8 +5,10 @@ import { useAuth } from "../context/AuthContext.jsx";
 import {
   createMedication,
   createRecord,
+  findUserByEmail,
   getActiveMedications,
-  getPatientForProvider,
+  getOrCreatePatientForUser,
+  getPatientsForProvider,
   getRecords,
   SLOT_DEFS,
 } from "../lib/firestoreData.js";
@@ -36,14 +38,17 @@ const initialRecordForm = {
 
 export default function ProviderDashboard() {
   const { currentUser } = useAuth();
-  const [patient, setPatient] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState("");
   const [medications, setMedications] = useState([]);
   const [records, setRecords] = useState([]);
+  const [patientEmail, setPatientEmail] = useState("");
   const [medicationForm, setMedicationForm] = useState(initialMedicationForm);
   const [recordForm, setRecordForm] = useState(initialRecordForm);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState("");
+  const selectedPatient = patients.find((patient) => patient.id === selectedPatientId) || null;
 
   async function loadProviderWorkspace() {
     if (!currentUser) return;
@@ -51,18 +56,20 @@ export default function ProviderDashboard() {
     setStatus("");
 
     try {
-      const patientDoc = await getPatientForProvider(currentUser.uid);
-      setPatient(patientDoc);
+      const patientDocs = await getPatientsForProvider(currentUser.uid);
+      setPatients(patientDocs);
+      const nextSelectedPatientId = selectedPatientId || patientDocs[0]?.id || "";
+      setSelectedPatientId(nextSelectedPatientId);
 
-      if (!patientDoc) {
+      if (!nextSelectedPatientId) {
         setMedications([]);
         setRecords([]);
         return;
       }
 
       const [medicationDocs, recordDocs] = await Promise.all([
-        getActiveMedications(patientDoc.id),
-        getRecords(patientDoc.id),
+        getActiveMedications(nextSelectedPatientId),
+        getRecords(nextSelectedPatientId),
       ]);
       setMedications(medicationDocs);
       setRecords(recordDocs);
@@ -76,6 +83,20 @@ export default function ProviderDashboard() {
   useEffect(() => {
     loadProviderWorkspace();
   }, [currentUser]);
+
+  useEffect(() => {
+    async function loadSelectedPatientData() {
+      if (!selectedPatientId) return;
+      const [medicationDocs, recordDocs] = await Promise.all([
+        getActiveMedications(selectedPatientId),
+        getRecords(selectedPatientId),
+      ]);
+      setMedications(medicationDocs);
+      setRecords(recordDocs);
+    }
+
+    loadSelectedPatientData();
+  }, [selectedPatientId]);
 
   function updateMedicationField(field, value) {
     setMedicationForm((current) => ({ ...current, [field]: value }));
@@ -93,21 +114,55 @@ export default function ProviderDashboard() {
     });
   }
 
+  async function handleAddPatient(event) {
+    event.preventDefault();
+    setIsSaving(true);
+    setStatus("");
+
+    try {
+      const patientUser = await findUserByEmail(patientEmail);
+
+      if (!patientUser) {
+        setStatus("No BliT account was found with that email. Ask the patient to create an account first.");
+        return;
+      }
+
+      if (patientUser.role !== "patient") {
+        setStatus("That email belongs to a doctor account. Add a patient account email.");
+        return;
+      }
+
+      const patientDoc = await getOrCreatePatientForUser({
+        patientUser,
+        providerId: currentUser.uid,
+      });
+      const patientDocs = await getPatientsForProvider(currentUser.uid);
+      setPatients(patientDocs);
+      setSelectedPatientId(patientDoc.id);
+      setPatientEmail("");
+      setStatus(`${patientDoc.name || patientDoc.email} was added to your patient list.`);
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function handleAddMedication(event) {
     event.preventDefault();
-    if (!patient || medicationForm.scheduleSlots.length === 0) return;
+    if (!selectedPatient || medicationForm.scheduleSlots.length === 0) return;
     setIsSaving(true);
     setStatus("");
 
     try {
       await createMedication({
-        patientId: patient.id,
+        patientId: selectedPatient.id,
         providerId: currentUser.uid,
         values: medicationForm,
       });
       setMedicationForm(initialMedicationForm);
-      setMedications(await getActiveMedications(patient.id));
-      setStatus("Medication added to the patient plan.");
+      setMedications(await getActiveMedications(selectedPatient.id));
+      setStatus("Medication added to the selected patient plan.");
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -117,19 +172,19 @@ export default function ProviderDashboard() {
 
   async function handleAddRecord(event) {
     event.preventDefault();
-    if (!patient) return;
+    if (!selectedPatient) return;
     setIsSaving(true);
     setStatus("");
 
     try {
       await createRecord({
-        patientId: patient.id,
+        patientId: selectedPatient.id,
         providerId: currentUser.uid,
         values: recordForm,
       });
       setRecordForm(initialRecordForm);
-      setRecords(await getRecords(patient.id));
-      setStatus("Record added to the patient timeline.");
+      setRecords(await getRecords(selectedPatient.id));
+      setStatus("Record added to the selected patient timeline.");
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -141,30 +196,61 @@ export default function ProviderDashboard() {
     return <div className="state-card">Loading provider workspace...</div>;
   }
 
-  if (!patient) {
-    return (
-      <div className="state-card">
-        No patient profile is assigned to this provider yet. Add a patients document
-        where createdByProviderId equals {currentUser.uid}.
-      </div>
-    );
-  }
-
   return (
     <>
       <PageHeader
         eyebrow="Provider workspace"
-        title="Patient care controls"
-        text="For the MVP, one provider account manages one patient profile."
+        title="Doctor dashboard"
+        text="Add patients by email, then assign medications and records that show on their side."
       />
+
+      <section className="form-card">
+        <div>
+          <p className="eyebrow">Patient list</p>
+          <h2>Add a patient by email</h2>
+          <p>The patient needs a BliT patient account first. Then you can manage their meds and records.</p>
+        </div>
+        <form onSubmit={handleAddPatient}>
+          <label>
+            Patient email
+            <input
+              type="email"
+              value={patientEmail}
+              onChange={(event) => setPatientEmail(event.target.value)}
+              placeholder="patient@example.com"
+              required
+            />
+          </label>
+          <button type="submit" disabled={isSaving}>
+            {isSaving ? "Adding..." : "Add patient"}
+          </button>
+        </form>
+      </section>
+
+      {patients.length > 0 && (
+        <section className="patient-list" aria-label="Doctor patient list">
+          {patients.map((patient) => (
+            <button
+              className={patient.id === selectedPatientId ? "active" : ""}
+              key={patient.id}
+              type="button"
+              onClick={() => setSelectedPatientId(patient.id)}
+            >
+              <strong>{patient.name || patient.email}</strong>
+              <span>{patient.email || patient.patientCode || patient.id}</span>
+            </button>
+          ))}
+        </section>
+      )}
 
       <section className="provider-overview">
         <div>
-          <p className="muted">Active patient</p>
-          <h2>{patient.name}</h2>
+          <p className="muted">Selected patient</p>
+          <h2>{selectedPatient?.name || "No patient selected"}</h2>
           <p>
-            {patient.age ? `Age ${patient.age} - ` : ""}
-            Patient ID {patient.patientCode || patient.id}
+            {selectedPatient
+              ? `Patient ID ${selectedPatient.patientCode || selectedPatient.id}`
+              : "Add a patient by email to begin."}
           </p>
         </div>
         <div className="provider-stats">
@@ -177,7 +263,7 @@ export default function ProviderDashboard() {
             records
           </span>
           <span>
-            <strong>{patient.phone || "No phone"}</strong>
+            <strong>{selectedPatient?.email || "No email"}</strong>
             contact
           </span>
         </div>
@@ -259,7 +345,10 @@ export default function ProviderDashboard() {
               />
             </label>
           </div>
-          <button type="submit" disabled={isSaving || medicationForm.scheduleSlots.length === 0}>
+          <button
+            type="submit"
+            disabled={isSaving || !selectedPatient || medicationForm.scheduleSlots.length === 0}
+          >
             {isSaving ? "Saving..." : "Save medication"}
           </button>
         </form>
@@ -312,7 +401,7 @@ export default function ProviderDashboard() {
               required
             />
           </label>
-          <button type="submit" disabled={isSaving}>
+          <button type="submit" disabled={isSaving || !selectedPatient}>
             {isSaving ? "Saving..." : "Save record"}
           </button>
         </form>

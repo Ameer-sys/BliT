@@ -48,7 +48,7 @@ export function AuthProvider({ children }) {
       authError,
       currentUser,
       loading,
-      refreshUserProfile: () => (currentUser ? loadUserProfile(currentUser) : null),
+      refreshUserProfile: (user = currentUser) => (user ? loadUserProfile(user) : null),
       role: userProfile?.role,
       signOut: () => firebaseSignOut(auth),
       userProfile,

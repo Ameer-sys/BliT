@@ -6,7 +6,7 @@ export default function RecordList({ items }) {
           <div>
             <span className="type-pill">{item.type}</span>
             <h3>{item.title}</h3>
-            <p>{item.detail}</p>
+            <p>{item.detail || item.notes}</p>
           </div>
           <strong>{item.date}</strong>
         </article>

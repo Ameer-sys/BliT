@@ -1,4 +1,4 @@
-# Pryln Prototype
+# BliT / Pryln Prototype
 
 Pryln is a patient-centered health timeline and medication tracking prototype.
 Providers create patient profiles, add medications and records, and patients

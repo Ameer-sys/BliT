@@ -11,6 +11,13 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState("");
 
+  async function loadUserProfile(user) {
+    const userSnap = await getDoc(doc(db, "users", user.uid));
+    const profile = userSnap.exists() ? { id: userSnap.id, ...userSnap.data() } : null;
+    setUserProfile(profile);
+    return profile;
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
@@ -24,8 +31,7 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const userSnap = await getDoc(doc(db, "users", user.uid));
-        setUserProfile(userSnap.exists() ? { id: userSnap.id, ...userSnap.data() } : null);
+        await loadUserProfile(user);
       } catch (error) {
         setAuthError(error.message);
         setUserProfile(null);
@@ -42,6 +48,7 @@ export function AuthProvider({ children }) {
       authError,
       currentUser,
       loading,
+      refreshUserProfile: () => (currentUser ? loadUserProfile(currentUser) : null),
       role: userProfile?.role,
       signOut: () => firebaseSignOut(auth),
       userProfile,

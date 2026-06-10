@@ -93,7 +93,8 @@ p {
 }
 
 .welcome-page,
-.auth-page {
+.auth-page,
+.setup-page {
   width: min(1180px, calc(100% - 2rem));
   min-height: 100vh;
   margin: 0 auto;
@@ -199,7 +200,8 @@ p {
 .records-grid article,
 .profile-hero,
 .details-list,
-.auth-card {
+.auth-card,
+.setup-card {
   border: 1px solid rgba(229, 231, 235, 0.9);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 14px 36px rgba(17, 24, 39, 0.06);
@@ -354,6 +356,63 @@ p {
 .quiet-link {
   display: inline-flex;
   margin-top: 1rem;
+}
+
+.setup-page {
+  display: grid;
+  place-items: center;
+}
+
+.setup-card {
+  width: min(100%, 42rem);
+  border-radius: 1.35rem;
+  padding: 1.25rem;
+}
+
+.setup-card h1 {
+  margin-bottom: 0.8rem;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  line-height: 1;
+}
+
+.setup-card p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.role-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 1.2rem 0;
+}
+
+.role-choice-grid button {
+  display: grid;
+  gap: 0.4rem;
+  min-height: 9rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: white;
+  color: var(--ink);
+  text-align: left;
+}
+
+.role-choice-grid strong {
+  font-size: 1.2rem;
+}
+
+.role-choice-grid span {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.text-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
 }
 
 .app-frame {
@@ -803,7 +862,8 @@ p {
 
 @media (max-width: 640px) {
   .welcome-page,
-  .auth-page {
+  .auth-page,
+  .setup-page {
     width: min(100% - 1rem, 30rem);
   }
 
@@ -833,7 +893,14 @@ p {
   .blister-grid,
   .provider-stats,
   .action-grid,
-  .records-grid {
+  .records-grid,
+  .role-choice-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .role-choice-grid {
+    grid-template-columns: 1fr;
   }
 }

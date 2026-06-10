@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import CompleteAccountSetup from "./CompleteAccountSetup.jsx";
 
 function routeForRole(role) {
   if (role === "provider") return "/provider";
@@ -23,12 +24,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
   }
 
   if (!userProfile?.role) {
-    return (
-      <div className="state-card error">
-        Your account is authenticated, but no BliT user role was found at
-        users/{currentUser.uid}.
-      </div>
-    );
+    return <CompleteAccountSetup />;
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {

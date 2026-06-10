@@ -8,9 +8,6 @@ export default function Welcome() {
         <span className="welcome-nav-spacer" aria-hidden="true" />
         <div>
           <Link to="/login">Log in</Link>
-          <Link className="dark-link" to="/signup">
-            Get access
-          </Link>
         </div>
       </nav>
 
@@ -25,10 +22,7 @@ export default function Welcome() {
           </p>
           <div className="hero-actions">
             <Link className="primary-link" to="/login">
-              Sign in
-            </Link>
-            <Link className="secondary-link" to="/signup">
-              Create patient access
+              Log in / Sign up
             </Link>
           </div>
         </div>

@@ -17,6 +17,14 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -680,6 +688,11 @@ select {
 .content-panel {
   width: min(100%, 1100px);
   padding: 2rem;
+}
+
+.mobile-header,
+.mobile-bottom-nav {
+  display: none;
 }
 
 .doctor-dashboard {
@@ -1566,52 +1579,105 @@ select {
   }
 
   .app-frame {
+    display: block;
     grid-template-columns: 1fr;
   }
 
-  .side-nav {
-    position: fixed;
-    right: 0.75rem;
-    bottom: 0.75rem;
-    left: 0.75rem;
-    z-index: 12;
-    height: auto;
-    border: 1px solid var(--line);
-    border-radius: 1.25rem;
-    padding: 0.45rem;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
-  }
-
-  .side-nav nav {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .side-nav a {
-    display: grid;
-    justify-content: center;
-    justify-items: center;
-    gap: 0.18rem;
-    font-size: 0.78rem;
-    padding: 0.55rem 0.2rem;
-  }
-
-  .side-nav .logo,
-  .sign-out-btn {
+  .desktop-sidebar,
+  .side-nav,
+  .doctor-topbar {
     display: none;
   }
 
+  .mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 56px;
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid rgba(219, 229, 234, 0.85);
+    background: rgba(248, 252, 251, 0.88);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-header .logo {
+    gap: 0.38rem;
+  }
+
+  .mobile-header .brand-symbol {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .mobile-header .logo strong {
+    font-size: 1rem;
+  }
+
+  .mobile-header strong {
+    color: var(--black);
+    font-size: 0.95rem;
+  }
+
+  .mobile-header button {
+    display: grid;
+    width: 2.35rem;
+    min-height: 2.35rem;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 0.8rem;
+    background: white;
+    color: var(--teal);
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-around;
+    min-height: 72px;
+    padding: 0.45rem 0.45rem calc(0.45rem + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(219, 229, 234, 0.95);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 -16px 40px rgba(15, 23, 42, 0.1);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-bottom-nav a {
+    display: grid;
+    flex: 1;
+    justify-items: center;
+    gap: 0.2rem;
+    max-width: 5rem;
+    border-radius: 0.9rem;
+    padding: 0.45rem 0.2rem;
+    color: #6b7c8f;
+    font-size: 0.72rem;
+    font-weight: 850;
+    line-height: 1;
+  }
+
+  .mobile-bottom-nav a.active {
+    background: rgba(223, 248, 244, 0.9);
+    color: var(--teal);
+  }
+
   .content-panel {
-    padding-bottom: 6rem;
-  }
-
-  .doctor-topbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .doctor-actions {
     width: 100%;
-    overflow-x: auto;
+    max-width: 100%;
+    padding: 1.25rem 1rem calc(6.5rem + env(safe-area-inset-bottom));
+  }
+
+  .doctor-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 1.25rem 1rem calc(6.5rem + env(safe-area-inset-bottom));
   }
 
   .doctor-hero,
@@ -1620,6 +1686,256 @@ select {
     flex-direction: column;
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(224, 251, 246, 0.76));
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+
+  .welcome-page,
+  .auth-page,
+  .setup-page {
+    width: 100%;
+    min-height: 100dvh;
+    padding: 1rem;
+  }
+
+  .welcome-nav {
+    min-height: 2.5rem;
+    justify-content: flex-end;
+  }
+
+  .welcome-nav .welcome-nav-spacer {
+    display: none;
+  }
+
+  .welcome-nav div {
+    width: auto;
+  }
+
+  .welcome-nav a {
+    min-height: 2.45rem;
+    padding: 0 0.85rem;
+    font-size: 0.92rem;
+  }
+
+  .welcome-hero {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    min-height: auto;
+    padding-top: 0.5rem;
+  }
+
+  .brand-art.hero-logo {
+    width: min(100%, 22rem);
+    margin: 0 auto 1rem;
+  }
+
+  .hero-copy {
+    width: 100%;
+  }
+
+  .hero-copy h1 {
+    max-width: 100%;
+    font-size: clamp(2.35rem, 10vw, 2.625rem);
+    line-height: 1.02;
+  }
+
+  .hero-copy p,
+  .auth-brand p,
+  .page-header p {
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions .primary-link {
+    width: 100%;
+    min-height: 3rem;
+    font-size: 1rem;
+  }
+
+  .phone-preview {
+    display: block;
+    min-height: auto;
+    border-width: 0.45rem;
+    border-radius: 2rem;
+    padding: 0.85rem;
+    transform: none;
+  }
+
+  .preview-card strong {
+    font-size: 1.25rem;
+  }
+
+  .preview-blister div {
+    min-height: 7.2rem;
+  }
+
+  .auth-page {
+    display: grid;
+    align-content: start;
+    gap: 1rem;
+    padding-top: 1rem;
+  }
+
+  .auth-brand h1 {
+    font-size: clamp(2rem, 9vw, 2.5rem);
+    line-height: 1.05;
+  }
+
+  .auth-card {
+    width: calc(100% - 0px);
+    max-width: 28rem;
+    margin: 0 auto;
+    border-radius: 1.1rem;
+    padding: 1rem;
+  }
+
+  .auth-card .logo.stacked .brand-symbol {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .auth-card .logo.stacked strong {
+    font-size: 1.8rem;
+  }
+
+  .auth-card .logo.stacked small {
+    font-size: 0.78rem;
+  }
+
+  .auth-form input,
+  .form-card input,
+  .form-card textarea,
+  .panel-form input,
+  .panel-form textarea,
+  .compact-form input,
+  .search-box input,
+  select {
+    min-height: 2.75rem;
+    font-size: 0.96rem;
+  }
+
+  .role-tabs {
+    gap: 0.25rem;
+  }
+
+  .role-tabs button,
+  .auth-form button,
+  .primary-btn,
+  .form-card button {
+    min-height: 2.75rem;
+    font-size: 0.96rem;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+  }
+
+  .page-header h1,
+  .doctor-hero h1,
+  .patient-detail-hero h1 {
+    font-size: clamp(1.8rem, 8vw, 2.125rem);
+    line-height: 1.06;
+  }
+
+  .dashboard-grid,
+  .detail-grid,
+  .doctor-controls {
+    gap: 0.85rem;
+  }
+
+  .summary-card,
+  .next-card,
+  .provider-overview,
+  .form-card,
+  .record-card,
+  .med-card,
+  .records-grid article,
+  .profile-hero,
+  .details-list,
+  .state-card,
+  .panel-card,
+  .panel-form,
+  .doctor-patient-card,
+  .empty-panel {
+    max-width: 100%;
+    border-radius: 1rem;
+    padding: 0.9rem;
+  }
+
+  .summary-row strong {
+    font-size: 2rem;
+  }
+
+  .section-heading {
+    margin: 1rem 0 0.65rem;
+  }
+
+  .blister-grid,
+  .doctor-patient-grid,
+  .records-grid,
+  .action-grid,
+  .provider-stats,
+  .checkbox-grid,
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .blister-pocket {
+    min-height: 7.8rem;
+    padding: 0.8rem;
+  }
+
+  .pill-row {
+    margin: 0.85rem 0 0.65rem;
+  }
+
+  .pill-shape {
+    width: 0.92rem;
+    height: 1.7rem;
+  }
+
+  .pocket-meds {
+    white-space: normal;
+  }
+
+  .doctor-hero,
+  .patient-detail-hero {
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(224, 251, 246, 0.76));
+  }
+
+  .compact-form,
+  .search-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .compact-form button {
+    width: 100%;
+  }
+
+  .timeline-widgets {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-bar {
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+  }
+
+  .tab-bar button {
+    flex: 0 0 auto;
+    min-height: 2.35rem;
+    font-size: 0.85rem;
   }
 }
 
@@ -1646,7 +1962,7 @@ select {
   }
 
   .auth-preview,
-  .phone-preview {
+  .auth-preview {
     display: none;
   }
 
@@ -1698,5 +2014,31 @@ select {
   .record-card,
   .next-card {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-page {
+    width: 100%;
+  }
+
+  .auth-card {
+    width: calc(100% - 2rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .blister-grid,
+  .doctor-patient-grid,
+  .records-grid,
+  .action-grid,
+  .provider-stats,
+  .checkbox-grid,
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-blister {
+    grid-template-columns: 1fr 1fr;
   }
 }

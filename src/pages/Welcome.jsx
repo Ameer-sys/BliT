@@ -16,6 +16,7 @@ export default function Welcome() {
 
       <section className="welcome-hero">
         <div className="hero-copy">
+          <img className="brand-art" src="/blit-logo.png" alt="BliT logo: Your health. Connected." />
           <p className="eyebrow">Patient-centered health timeline</p>
           <h1>Your meds and medical records, packed into one calm app.</h1>
           <p>
@@ -39,8 +40,8 @@ export default function Welcome() {
             <span>BliT</span>
           </div>
           <div className="preview-card">
-            <p>Good morning, Sarah</p>
-            <strong>2 / 4 doses completed</strong>
+            <p>Today in BliT</p>
+            <strong>Digital blister pack</strong>
             <div className="progress-track">
               <span style={{ width: "50%" }} />
             </div>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-export default function BlisterPack({ slots, onMarkTaken, isSaving }) {
+export default function BlisterPack({ slots, onMarkTaken, isSaving, readOnly = false }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const completed = useMemo(() => slots.filter((slot) => slot.taken).length, [slots]);
   const percent = slots.length ? Math.round((completed / slots.length) * 100) : 0;
@@ -86,6 +86,10 @@ export default function BlisterPack({ slots, onMarkTaken, isSaving }) {
               <button className="primary-btn done" type="button" disabled>
                 <CheckCircle2 size={18} />
                 Already taken
+              </button>
+            ) : readOnly ? (
+              <button className="primary-btn subtle" type="button" disabled>
+                Patient marks this dose on their side
               </button>
             ) : (
               <button

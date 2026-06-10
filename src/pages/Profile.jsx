@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BackButton from "../components/BackButton.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getPatientForUser, getPatientsForProvider } from "../lib/firestoreData.js";
@@ -65,6 +66,7 @@ export default function Profile() {
             ? "Your patient account and linked care access."
             : "Your doctor workspace account for managing patient care."
         }
+        action={<BackButton fallback={isPatient ? "/patient" : "/provider"} />}
       />
       <section className="profile-layout">
         <div className="profile-hero">

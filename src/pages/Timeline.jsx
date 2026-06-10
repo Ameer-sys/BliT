@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BackButton from "../components/BackButton.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import RecordList from "../components/RecordList.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -38,6 +39,7 @@ export default function Timeline() {
         eyebrow="Health timeline"
         title="One clear story of care"
         text="Visits, lab results, prescriptions, pharmacy updates, and provider notes in order."
+        action={<BackButton fallback={role === "provider" ? "/provider" : "/patient"} />}
       />
       {timeline.length ? <RecordList items={timeline} /> : <div className="state-card">No records yet.</div>}
     </>

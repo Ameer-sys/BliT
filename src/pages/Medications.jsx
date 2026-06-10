@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BackButton from "../components/BackButton.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
@@ -41,6 +42,7 @@ export default function Medications() {
         eyebrow="Medication plan"
         title="Active medications"
         text="Medication details remain available even when the dashboard focuses on dose timing."
+        action={<BackButton fallback={role === "provider" ? "/provider" : "/patient"} />}
       />
       <div className="med-list">
         {medications.length === 0 && (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import BackButton from "../components/BackButton.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getPatientForUser, getPatientsForProvider, getRecords } from "../lib/firestoreData.js";
@@ -51,6 +52,7 @@ export default function Records() {
         eyebrow="Records library"
         title="Everything organized by type"
         text="The timeline tells the story; records keep the source documents easy to find."
+        action={<BackButton fallback={role === "provider" ? "/provider" : "/patient"} />}
       />
       <section className="records-grid">
         {summaries.map((record) => (

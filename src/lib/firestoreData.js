@@ -2,11 +2,13 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   limit,
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import { db } from "../firebase.js";
@@ -55,6 +57,18 @@ export async function getPatientsForProvider(uid) {
     query(collection(db, "patients"), where("createdByProviderId", "==", uid)),
   );
   return withId(snapshot).sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+}
+
+export async function getPatientById(patientId) {
+  const patientSnap = await getDoc(doc(db, "patients", patientId));
+  return patientSnap.exists() ? { id: patientSnap.id, ...patientSnap.data() } : null;
+}
+
+export async function updatePatient(patientId, values) {
+  return updateDoc(doc(db, "patients", patientId), {
+    ...values,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function findUserByEmail(email) {
@@ -185,6 +199,13 @@ export async function createMedication({ patientId, providerId, values }) {
     endDate: values.endDate || "",
     status: "active",
     createdAt: serverTimestamp(),
+  });
+}
+
+export async function updateMedication(medicationId, values) {
+  return updateDoc(doc(db, "medications", medicationId), {
+    ...values,
+    updatedAt: serverTimestamp(),
   });
 }
 

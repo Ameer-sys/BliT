@@ -1,19 +1,21 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+// optional, only if you later use file uploads
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyDX_BtHjoMaImB8VTMoDNw8dUkjevyFTBM",
+  authDomain: "blit-45c43.firebaseapp.com",
+  projectId: "blit-45c43",
+  storageBucket: "blit-45c43.firebasestorage.app",
+  messagingSenderId: "974598432471",
+  appId: "1:974598432471:web:2ff3c8e90e909b6802f292",
+  measurementId: "G-900WXBQ5C5",
 };
 
-const hasFirebaseConfig = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
+const app = initializeApp(firebaseConfig);
 
-export const firebaseApp = hasFirebaseConfig ? initializeApp(firebaseConfig) : null;
-export const auth = firebaseApp ? getAuth(firebaseApp) : null;
-export const db = firebaseApp ? getFirestore(firebaseApp) : null;
-export const firebaseReady = hasFirebaseConfig;
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);

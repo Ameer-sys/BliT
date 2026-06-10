@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Login from "./pages/Login.jsx";
 import Medications from "./pages/Medications.jsx";
 import PatientDashboard from "./pages/PatientDashboard.jsx";
@@ -16,9 +17,29 @@ export default function App() {
       <Route path="/" element={<Welcome />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route element={<AppShell />}>
-        <Route path="/patient" element={<PatientDashboard />} />
-        <Route path="/provider" element={<ProviderDashboard />} />
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppShell />
+          </ProtectedRoute>
+        }
+      >
+        <Route
+          path="/patient"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <PatientDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/provider"
+          element={
+            <ProtectedRoute allowedRoles={["provider"]}>
+              <ProviderDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/timeline" element={<Timeline />} />
         <Route path="/medications" element={<Medications />} />
         <Route path="/records" element={<Records />} />

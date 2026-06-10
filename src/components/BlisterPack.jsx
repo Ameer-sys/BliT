@@ -1,18 +1,14 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-export default function BlisterPack({ initialSlots }) {
-  const [slots, setSlots] = useState(initialSlots);
+export default function BlisterPack({ slots, onMarkTaken, isSaving }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const completed = useMemo(() => slots.filter((slot) => slot.taken).length, [slots]);
-  const percent = Math.round((completed / slots.length) * 100);
+  const percent = slots.length ? Math.round((completed / slots.length) * 100) : 0;
 
-  function markTaken() {
-    setSlots((current) =>
-      current.map((slot) =>
-        slot.id === selectedSlot.id ? { ...slot, taken: true, takenAt: "Just now" } : slot,
-      ),
-    );
+  async function markTaken() {
+    if (!selectedSlot?.meds?.length) return;
+    await onMarkTaken(selectedSlot);
     setSelectedSlot(null);
   }
 
@@ -49,12 +45,14 @@ export default function BlisterPack({ initialSlots }) {
               <span>{slot.time}</span>
             </span>
             <span className="pill-row">
-              {slot.meds.map((med) => (
-                <span className="pill-shape" key={med} />
-              ))}
+              {slot.meds.length ? (
+                slot.meds.map((med) => <span className="pill-shape" key={med.id} />)
+              ) : (
+                <span className="empty-pocket">No meds</span>
+              )}
             </span>
             <span className="status-chip">
-              {slot.taken ? `Taken ${slot.takenAt}` : "Pending"}
+              {slot.meds.length === 0 ? "Empty" : slot.taken ? `Taken ${slot.takenAt}` : "Pending"}
             </span>
           </button>
         ))}
@@ -79,7 +77,9 @@ export default function BlisterPack({ initialSlots }) {
             <p>{selectedSlot.instructions}</p>
             <ul>
               {selectedSlot.meds.map((med) => (
-                <li key={med}>{med}</li>
+                <li key={med.id}>
+                  {med.name} {med.dosage}
+                </li>
               ))}
             </ul>
             {selectedSlot.taken ? (
@@ -88,8 +88,13 @@ export default function BlisterPack({ initialSlots }) {
                 Already taken
               </button>
             ) : (
-              <button className="primary-btn" type="button" onClick={markTaken}>
-                Mark taken
+              <button
+                className="primary-btn"
+                type="button"
+                disabled={isSaving || selectedSlot.meds.length === 0}
+                onClick={markTaken}
+              >
+                {isSaving ? "Saving..." : "Mark taken"}
               </button>
             )}
           </article>

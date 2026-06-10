@@ -11,7 +11,10 @@ import {
   getActiveMedications,
   getDoseLogs,
   getPatientById,
+  getPatientDosePockets,
   getRecords,
+  uploadRecordFile,
+  pocketIdFor,
   SLOT_DEFS,
   updateMedication,
   updatePatient,
@@ -23,6 +26,9 @@ const initialMedicationForm = {
   dosage: "",
   instructions: "",
   scheduleSlots: ["breakfast"],
+  frequencyType: "daily",
+  daysOfWeek: [],
+  scheduleNotes: "",
   startDate: "",
   endDate: "",
 };
@@ -34,6 +40,24 @@ const initialRecordForm = {
   notes: "",
 };
 
+const initialPocketForm = {
+  label: "",
+  time: "",
+  frequencyType: "daily",
+  daysOfWeek: [],
+  notes: "",
+};
+
+const dayOptions = [
+  ["sun", "Sun"],
+  ["mon", "Mon"],
+  ["tue", "Tue"],
+  ["wed", "Wed"],
+  ["thu", "Thu"],
+  ["fri", "Fri"],
+  ["sat", "Sat"],
+];
+
 export default function PatientDetail() {
   const { patientId } = useParams();
   const { currentUser } = useAuth();
@@ -44,10 +68,15 @@ export default function PatientDetail() {
   const [records, setRecords] = useState([]);
   const [medicationForm, setMedicationForm] = useState(initialMedicationForm);
   const [recordForm, setRecordForm] = useState(initialRecordForm);
+  const [recordFile, setRecordFile] = useState(null);
+  const [pocketForm, setPocketForm] = useState(initialPocketForm);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState("");
-  const slots = useMemo(() => buildDoseSlots(medications, doseLogs), [medications, doseLogs]);
+  const slots = useMemo(
+    () => buildDoseSlots(medications, doseLogs, getPatientDosePockets(patient)),
+    [medications, doseLogs, patient],
+  );
 
   async function loadPatient() {
     setLoading(true);
@@ -94,6 +123,62 @@ export default function PatientDetail() {
           : [...current.scheduleSlots, slotId],
       };
     });
+  }
+
+  function toggleMedicationDay(day) {
+    setMedicationForm((current) => ({
+      ...current,
+      daysOfWeek: current.daysOfWeek.includes(day)
+        ? current.daysOfWeek.filter((item) => item !== day)
+        : [...current.daysOfWeek, day],
+    }));
+  }
+
+  function togglePocketDay(day) {
+    setPocketForm((current) => ({
+      ...current,
+      daysOfWeek: current.daysOfWeek.includes(day)
+        ? current.daysOfWeek.filter((item) => item !== day)
+        : [...current.daysOfWeek, day],
+    }));
+  }
+
+  async function handleAddPocket(event) {
+    event.preventDefault();
+    setIsSaving(true);
+    try {
+      const id = pocketIdFor(pocketForm.label);
+      const existing = Array.isArray(patient.dosePockets) ? patient.dosePockets : [];
+      await updatePatient(patientId, {
+        dosePockets: [
+          ...existing.filter((pocket) => pocket.id !== id),
+          { ...pocketForm, id },
+        ],
+      });
+      setPocketForm(initialPocketForm);
+      setStatus("Dose pocket saved.");
+      await loadPatient();
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeletePocket(pocketId) {
+    setIsSaving(true);
+    try {
+      const existing = Array.isArray(patient.dosePockets) ? patient.dosePockets : [];
+      await updatePatient(patientId, {
+        dosePockets: existing.filter((pocket) => pocket.id !== pocketId),
+      });
+      setStatus("Dose pocket removed.");
+      await loadPatient();
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function handleSavePatient(event) {
@@ -146,12 +231,16 @@ export default function PatientDetail() {
     event.preventDefault();
     setIsSaving(true);
     try {
+      const uploadedFile = recordFile
+        ? await uploadRecordFile({ patientId, file: recordFile })
+        : null;
       await createRecord({
         patientId,
         providerId: currentUser.uid,
-        values: recordForm,
+        values: { ...recordForm, ...(uploadedFile || {}) },
       });
       setRecordForm(initialRecordForm);
+      setRecordFile(null);
       setRecords(await getRecords(patientId));
       setStatus("Record added.");
     } catch (error) {
@@ -234,11 +323,37 @@ export default function PatientDetail() {
             Instructions
             <textarea value={medicationForm.instructions} onChange={(event) => updateMedicationField("instructions", event.target.value)} required />
           </label>
+          <div className="two-column">
+            <label>
+              Frequency
+              <select value={medicationForm.frequencyType} onChange={(event) => updateMedicationField("frequencyType", event.target.value)}>
+                <option value="daily">Daily</option>
+                <option value="specific_days">Specific days</option>
+                <option value="every_other_day">Every other day</option>
+                <option value="weekly">Weekly</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label>
+              Optional notes
+              <input value={medicationForm.scheduleNotes} onChange={(event) => updateMedicationField("scheduleNotes", event.target.value)} placeholder="After food, every other day..." />
+            </label>
+          </div>
+          {["specific_days", "weekly"].includes(medicationForm.frequencyType) && (
+            <div className="checkbox-grid compact-days">
+              {dayOptions.map(([day, label]) => (
+                <label className="check-option" key={day}>
+                  <input type="checkbox" checked={medicationForm.daysOfWeek.includes(day)} onChange={() => toggleMedicationDay(day)} />
+                  {label}
+                </label>
+              ))}
+            </div>
+          )}
           <div className="checkbox-grid">
-            {SLOT_DEFS.map((slot) => (
+            {getPatientDosePockets(patient).map((slot) => (
               <label className="check-option" key={slot.id}>
                 <input type="checkbox" checked={medicationForm.scheduleSlots.includes(slot.id)} onChange={() => toggleScheduleSlot(slot.id)} />
-                {slot.label}
+                {slot.label} {slot.time ? `(${slot.time})` : ""}
               </label>
             ))}
           </div>
@@ -272,6 +387,77 @@ export default function PatientDetail() {
       </section>
 
       <section className="detail-grid">
+        <form className="panel-form" onSubmit={handleAddPocket}>
+          <div>
+            <p className="eyebrow">Dose pockets</p>
+            <h2>Customize schedule</h2>
+          </div>
+          <div className="two-column">
+            <label>
+              Slot label
+              <input value={pocketForm.label} onChange={(event) => setPocketForm((current) => ({ ...current, label: event.target.value }))} placeholder="Morning, 8:00 AM, Weekly dose..." required />
+            </label>
+            <label>
+              Scheduled time
+              <input type="time" value={pocketForm.time} onChange={(event) => setPocketForm((current) => ({ ...current, time: event.target.value }))} />
+            </label>
+          </div>
+          <label>
+            Frequency type
+            <select value={pocketForm.frequencyType} onChange={(event) => setPocketForm((current) => ({ ...current, frequencyType: event.target.value }))}>
+              <option value="daily">Daily</option>
+              <option value="specific_days">Specific days</option>
+              <option value="every_other_day">Every other day</option>
+              <option value="weekly">Weekly</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          {["specific_days", "weekly"].includes(pocketForm.frequencyType) && (
+            <div className="checkbox-grid compact-days">
+              {dayOptions.map(([day, label]) => (
+                <label className="check-option" key={day}>
+                  <input type="checkbox" checked={pocketForm.daysOfWeek.includes(day)} onChange={() => togglePocketDay(day)} />
+                  {label}
+                </label>
+              ))}
+            </div>
+          )}
+          <label>
+            Notes
+            <input value={pocketForm.notes} onChange={(event) => setPocketForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Once weekly, Monday/Wednesday/Friday..." />
+          </label>
+          <button type="submit" disabled={isSaving}>Save dose pocket</button>
+        </form>
+        <section className="panel-card">
+          <p className="eyebrow">Patient schedule</p>
+          <h2>Dose pockets</h2>
+          <div className="mini-list">
+            {getPatientDosePockets(patient).map((pocket) => {
+              const isDefault = SLOT_DEFS.some((slot) => slot.id === pocket.id);
+              return (
+                <article key={pocket.id}>
+                  <div>
+                    <strong>{pocket.label} {pocket.time ? `at ${pocket.time}` : ""}</strong>
+                    <p>{pocket.frequencyType || "daily"} {pocket.daysOfWeek?.length ? `- ${pocket.daysOfWeek.join(", ")}` : ""}</p>
+                  </div>
+                  {!isDefault && (
+                    <div className="mini-actions">
+                      <button type="button" onClick={() => setPocketForm(pocket)}>
+                        Edit
+                      </button>
+                      <button type="button" disabled={isSaving} onClick={() => handleDeletePocket(pocket.id)}>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      </section>
+
+      <section className="detail-grid">
         <form className="panel-form" onSubmit={handleAddRecord}>
           <div>
             <p className="eyebrow">Timeline</p>
@@ -295,6 +481,15 @@ export default function PatientDetail() {
             Notes
             <textarea value={recordForm.notes} onChange={(event) => setRecordForm((current) => ({ ...current, notes: event.target.value }))} required />
           </label>
+          <label>
+            Upload photo or PDF
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(event) => setRecordFile(event.target.files?.[0] || null)}
+            />
+          </label>
+          {recordFile && <p className="helper-text">Ready to upload: {recordFile.name}</p>}
           <button type="submit" disabled={isSaving}>
             <FilePlus2 size={18} />
             Add record

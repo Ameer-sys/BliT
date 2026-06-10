@@ -8,9 +8,11 @@ import {
   buildDoseSlots,
   getActiveMedications,
   getDoseLogs,
+  getPatientDosePockets,
   getPatientForUser,
   getRecords,
   markSlotTaken,
+  skipSlot,
 } from "../lib/firestoreData.js";
 
 export default function PatientDashboard() {
@@ -23,7 +25,10 @@ export default function PatientDashboard() {
   const [status, setStatus] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const slots = useMemo(() => buildDoseSlots(medications, doseLogs), [medications, doseLogs]);
+  const slots = useMemo(
+    () => buildDoseSlots(medications, doseLogs, getPatientDosePockets(patient)),
+    [medications, doseLogs, patient],
+  );
   const nextSlot = slots.find((slot) => slot.meds.length > 0 && !slot.taken);
   const latestRecord = records[0];
 
@@ -82,6 +87,25 @@ export default function PatientDashboard() {
     }
   }
 
+  async function handleSkip(slot) {
+    if (!patient) return;
+    setIsSaving(true);
+    setStatus("");
+
+    try {
+      await skipSlot({
+        patientId: patient.id,
+        slot: slot.id,
+        medications: slot.meds,
+      });
+      setDoseLogs(await getDoseLogs(patient.id));
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   if (loading) {
     return <div className="state-card">Loading your patient dashboard...</div>;
   }
@@ -106,7 +130,7 @@ export default function PatientDashboard() {
       {status && <p className="helper-text error-text">{status}</p>}
 
       <div className="dashboard-grid">
-        <BlisterPack slots={slots} onMarkTaken={handleMarkTaken} isSaving={isSaving} />
+        <BlisterPack slots={slots} onMarkTaken={handleMarkTaken} onSkip={handleSkip} isSaving={isSaving} />
         <aside className="stack">
           <article className="next-card">
             <div>

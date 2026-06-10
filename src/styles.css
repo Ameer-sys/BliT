@@ -34,7 +34,8 @@ a {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -364,8 +365,14 @@ p {
 }
 
 .auth-card {
-  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.2rem, 3vw, 1.8rem);
   border-radius: 1.35rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.9)),
+    radial-gradient(circle at 50% 0%, rgba(39, 209, 189, 0.18), transparent 14rem);
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
 }
 
 .auth-form,
@@ -401,9 +408,42 @@ p {
   line-height: 1.3;
 }
 
+.password-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: white;
+}
+
+.password-field input {
+  border: 0;
+  background: transparent;
+}
+
+.password-field button {
+  display: grid;
+  width: 2.75rem;
+  min-height: 2.75rem;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #9aa8b5;
+}
+
+select {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  padding: 0.75rem 0.95rem;
+  background: white;
+  color: var(--ink);
 }
 
 .form-card textarea {
@@ -416,6 +456,12 @@ textarea::placeholder {
 .quiet-link {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.auth-switch a,
+.quiet-link {
+  color: var(--teal);
+  font-weight: 900;
 }
 
 .error-text {
@@ -437,7 +483,8 @@ textarea::placeholder {
   padding: 0.28rem;
   border: 1px solid var(--line);
   border-radius: 1rem;
-  background: white;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .role-tabs button {
@@ -451,8 +498,9 @@ textarea::placeholder {
 }
 
 .role-tabs button.active {
-  background: var(--black);
+  background: linear-gradient(135deg, var(--black), #0b3f4f);
   color: white;
+  box-shadow: 0 10px 24px rgba(16, 42, 54, 0.18);
 }
 
 .setup-page {
@@ -898,6 +946,12 @@ textarea::placeholder {
   font-weight: 850;
 }
 
+.mini-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .page-header {
   display: flex;
   align-items: start;
@@ -990,6 +1044,21 @@ textarea::placeholder {
   text-align: left;
 }
 
+.blister-pocket.pending {
+  border-color: #d8e6e4;
+}
+
+.blister-pocket.skipped {
+  border-color: rgba(245, 158, 11, 0.42);
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.96) 0 28%, rgba(254, 243, 199, 0.82) 29% 46%, transparent 47%),
+    linear-gradient(145deg, #ffffff, #fff8eb);
+}
+
+.blister-pocket.empty {
+  opacity: 0.88;
+}
+
 .pocket-top {
   display: flex;
   justify-content: space-between;
@@ -1019,6 +1088,17 @@ textarea::placeholder {
   font-weight: 800;
 }
 
+.pocket-meds {
+  display: block;
+  min-height: 1.05rem;
+  color: #496575;
+  font-size: 0.74rem;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .status-chip,
 .type-pill {
   display: inline-flex;
@@ -1033,6 +1113,11 @@ textarea::placeholder {
 .taken .status-chip {
   background: #dcfce7;
   color: #15803d;
+}
+
+.skipped .status-chip {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .stack,
@@ -1079,6 +1164,7 @@ textarea::placeholder {
   border-radius: 1.35rem;
   padding: 1.2rem;
   background: white;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.22);
 }
 
 .close-btn {
@@ -1092,11 +1178,32 @@ textarea::placeholder {
   background: white;
 }
 
-.dose-modal ul {
+.dose-detail-list {
+  display: grid;
+  gap: 0.65rem;
   margin: 1rem 0;
-  padding-left: 1.1rem;
+}
+
+.dose-detail-list article {
+  border: 1px solid var(--line);
+  border-radius: 0.95rem;
+  padding: 0.8rem;
+  background: #f8fcfb;
+}
+
+.dose-detail-list span,
+.dose-detail-list p,
+.dose-modal-status {
   color: var(--muted);
-  line-height: 1.7;
+  line-height: 1.55;
+}
+
+.dose-modal-status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+  font-weight: 800;
 }
 
 .primary-btn {
@@ -1178,6 +1285,32 @@ textarea::placeholder {
   padding: 1rem;
 }
 
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 1rem 0;
+}
+
+.tab-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.55rem;
+  border: 1px solid var(--line);
+  border-radius: 99rem;
+  padding: 0 0.85rem;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.tab-bar button.active {
+  border-color: rgba(11, 127, 121, 0.32);
+  background: var(--black);
+  color: white;
+}
+
 .action-grid svg {
   color: var(--teal);
 }
@@ -1193,6 +1326,14 @@ textarea::placeholder {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.record-card:hover,
+.record-card.expanded {
+  border-color: rgba(11, 127, 121, 0.22);
+  box-shadow: 0 20px 50px rgba(15, 118, 110, 0.1);
 }
 
 .record-card h3,
@@ -1206,6 +1347,98 @@ textarea::placeholder {
 .next-card p {
   color: var(--muted);
   line-height: 1.55;
+}
+
+.record-preview {
+  display: block;
+  width: min(100%, 22rem);
+  max-height: 16rem;
+  margin-top: 0.8rem;
+  border-radius: 0.9rem;
+  object-fit: cover;
+}
+
+.record-file-link {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  color: var(--teal);
+  font-weight: 900;
+}
+
+.timeline-widgets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.timeline-widgets article {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  border-radius: 1.15rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 36px rgba(17, 24, 39, 0.05);
+}
+
+.timeline-widgets svg {
+  color: var(--teal);
+}
+
+.timeline-widgets span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.timeline-widgets strong {
+  font-size: 2rem;
+}
+
+.spark-bars {
+  display: flex;
+  align-items: end;
+  gap: 0.25rem;
+  height: 2.2rem;
+}
+
+.spark-bars i {
+  width: 0.42rem;
+  border-radius: 99rem;
+  background: linear-gradient(180deg, var(--teal-2), var(--teal));
+}
+
+.timeline-list .record-list {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.timeline-list .record-list::before {
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 0.25rem;
+  width: 2px;
+  border-radius: 99rem;
+  background: linear-gradient(180deg, var(--teal), rgba(39, 209, 189, 0.08));
+  content: "";
+}
+
+.timeline-list .record-card {
+  position: relative;
+}
+
+.timeline-list .record-card::before {
+  position: absolute;
+  top: 1.2rem;
+  left: -1.37rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 1px rgba(11, 127, 121, 0.18);
+  content: "";
 }
 
 .med-card {
@@ -1252,10 +1485,18 @@ textarea::placeholder {
   width: auto;
 }
 
+.compact-days {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .profile-layout {
   display: grid;
   grid-template-columns: minmax(18rem, 0.8fr) minmax(20rem, 1.2fr);
   gap: 1rem;
+}
+
+.profile-form {
+  margin-top: 1rem;
 }
 
 .profile-hero {
@@ -1383,15 +1624,18 @@ textarea::placeholder {
     flex-direction: column;
   }
 
+  .welcome-nav {
+    align-items: flex-end;
+  }
+
   .hero-copy h1,
   .auth-brand h1 {
     font-size: clamp(2.4rem, 13vw, 4rem);
   }
 
+  .auth-preview,
   .phone-preview {
-    min-height: 39rem;
-    border-width: 0.45rem;
-    border-radius: 2.2rem;
+    display: none;
   }
 
   .content-panel {
@@ -1404,13 +1648,43 @@ textarea::placeholder {
   .provider-stats,
   .action-grid,
   .records-grid,
+  .timeline-widgets,
   .role-choice-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 460px) {
-  .role-choice-grid {
+  .role-choice-grid,
+  .timeline-widgets,
+  .compact-days {
     grid-template-columns: 1fr;
+  }
+
+  .brand-art.hero-logo {
+    width: 100%;
+    margin-bottom: 1.35rem;
+  }
+
+  .hero-copy h1,
+  .auth-brand h1 {
+    font-size: clamp(2.2rem, 12vw, 3.5rem);
+  }
+
+  .welcome-nav div,
+  .hero-actions,
+  .split-actions {
+    width: 100%;
+  }
+
+  .welcome-nav a,
+  .hero-actions a,
+  .split-actions button {
+    flex: 1;
+  }
+
+  .record-card,
+  .next-card {
+    flex-direction: column;
   }
 }

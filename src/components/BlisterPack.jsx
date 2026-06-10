@@ -1,14 +1,27 @@
 import { useMemo, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Clock3, XCircle } from "lucide-react";
 
-export default function BlisterPack({ slots, onMarkTaken, isSaving, readOnly = false }) {
+const statusLabels = {
+  empty: "Empty",
+  pending: "Pending",
+  taken: "Taken",
+  skipped: "Skipped",
+};
+
+export default function BlisterPack({ slots, onMarkTaken, onSkip, isSaving, readOnly = false }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const completed = useMemo(() => slots.filter((slot) => slot.taken).length, [slots]);
+  const completed = useMemo(() => slots.filter((slot) => slot.status === "taken").length, [slots]);
   const percent = slots.length ? Math.round((completed / slots.length) * 100) : 0;
 
   async function markTaken() {
     if (!selectedSlot?.meds?.length) return;
     await onMarkTaken(selectedSlot);
+    setSelectedSlot(null);
+  }
+
+  async function skipDose() {
+    if (!selectedSlot?.meds?.length || !onSkip) return;
+    await onSkip(selectedSlot);
     setSelectedSlot(null);
   }
 
@@ -35,7 +48,7 @@ export default function BlisterPack({ slots, onMarkTaken, isSaving, readOnly = f
       <div className="blister-grid">
         {slots.map((slot) => (
           <button
-            className={`blister-pocket ${slot.taken ? "taken" : ""}`}
+            className={`blister-pocket ${slot.status || "pending"}`}
             key={slot.id}
             type="button"
             onClick={() => setSelectedSlot(slot)}
@@ -51,8 +64,15 @@ export default function BlisterPack({ slots, onMarkTaken, isSaving, readOnly = f
                 <span className="empty-pocket">No meds</span>
               )}
             </span>
+            <span className="pocket-meds">
+              {slot.meds.length
+                ? slot.meds.map((med) => `${med.name} ${med.dosage || ""}`.trim()).join(", ")
+                : "No medications scheduled"}
+            </span>
             <span className="status-chip">
-              {slot.meds.length === 0 ? "Empty" : slot.taken ? `Taken ${slot.takenAt}` : "Pending"}
+              {slot.status === "taken" && slot.takenAt
+                ? `Taken ${slot.takenAt}`
+                : statusLabels[slot.status] || "Pending"}
             </span>
           </button>
         ))}
@@ -73,33 +93,68 @@ export default function BlisterPack({ slots, onMarkTaken, isSaving, readOnly = f
             <p className="muted">
               {selectedSlot.label} dose - {selectedSlot.time}
             </p>
-            <h2 id="dose-title">{selectedSlot.meds[0]}</h2>
+            <h2 id="dose-title">
+              {selectedSlot.meds.length
+                ? `${selectedSlot.meds.length} medication${selectedSlot.meds.length === 1 ? "" : "s"}`
+                : "Empty pocket"}
+            </h2>
             <p>{selectedSlot.instructions}</p>
-            <ul>
-              {selectedSlot.meds.map((med) => (
-                <li key={med.id}>
-                  {med.name} {med.dosage}
-                </li>
-              ))}
-            </ul>
-            {selectedSlot.taken ? (
+            <div className="dose-detail-list">
+              {selectedSlot.meds.length ? (
+                selectedSlot.meds.map((med) => (
+                  <article key={med.id}>
+                    <strong>{med.name}</strong>
+                    <span>{med.dosage || "Dose not specified"}</span>
+                    {med.instructions && <p>{med.instructions}</p>}
+                  </article>
+                ))
+              ) : (
+                <article>
+                  <strong>No meds scheduled</strong>
+                  <span>This pocket is here for timing, but nothing is assigned today.</span>
+                </article>
+              )}
+            </div>
+            <div className="dose-modal-status">
+              <Clock3 size={16} />
+              <span>
+                Status: {statusLabels[selectedSlot.status] || "Pending"}
+                {selectedSlot.takenAt ? ` at ${selectedSlot.takenAt}` : ""}
+              </span>
+            </div>
+            {selectedSlot.status === "taken" ? (
               <button className="primary-btn done" type="button" disabled>
                 <CheckCircle2 size={18} />
                 Already taken
+              </button>
+            ) : selectedSlot.status === "skipped" ? (
+              <button className="primary-btn subtle" type="button" disabled>
+                <XCircle size={18} />
+                Skipped
               </button>
             ) : readOnly ? (
               <button className="primary-btn subtle" type="button" disabled>
                 Patient marks this dose on their side
               </button>
             ) : (
-              <button
-                className="primary-btn"
-                type="button"
-                disabled={isSaving || selectedSlot.meds.length === 0}
-                onClick={markTaken}
-              >
-                {isSaving ? "Saving..." : "Mark taken"}
-              </button>
+              <div className="split-actions">
+                <button
+                  className="primary-btn"
+                  type="button"
+                  disabled={isSaving || selectedSlot.meds.length === 0}
+                  onClick={markTaken}
+                >
+                  {isSaving ? "Saving..." : "Mark taken"}
+                </button>
+                <button
+                  className="primary-btn subtle"
+                  type="button"
+                  disabled={isSaving || selectedSlot.meds.length === 0}
+                  onClick={skipDose}
+                >
+                  Skip
+                </button>
+              </div>
             )}
           </article>
         </div>

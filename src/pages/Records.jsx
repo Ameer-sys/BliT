@@ -1,13 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
+import { FileText } from "lucide-react";
 import BackButton from "../components/BackButton.jsx";
 import PageHeader from "../components/PageHeader.jsx";
+import RecordList from "../components/RecordList.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getPatientForUser, getPatientsForProvider, getRecords } from "../lib/firestoreData.js";
+
+const recordTabs = [
+  { id: "all", label: "All" },
+  { id: "visit", label: "Visits", match: ["visit", "appointment"] },
+  { id: "lab", label: "Labs", match: ["lab", "lab_result"] },
+  { id: "prescription", label: "Prescriptions", match: ["prescription"] },
+  { id: "scan", label: "Scans", match: ["scan", "imaging"] },
+  { id: "note", label: "Notes", match: ["note"] },
+];
 
 export default function Records() {
   const { currentUser, role } = useAuth();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
   const summaries = useMemo(() => {
     const counts = records.reduce((acc, record) => {
       const key = record.type || "note";
@@ -22,6 +34,11 @@ export default function Records() {
       { label: "Notes", value: counts.note || 0, detail: "Provider notes and care updates" },
     ];
   }, [records]);
+  const filteredRecords = useMemo(() => {
+    const tab = recordTabs.find((item) => item.id === activeTab);
+    if (!tab || tab.id === "all") return records;
+    return records.filter((record) => tab.match.includes(String(record.type || "note").toLowerCase()));
+  }, [activeTab, records]);
 
   useEffect(() => {
     async function loadRecords() {
@@ -63,6 +80,26 @@ export default function Records() {
           </article>
         ))}
       </section>
+      <section className="tab-bar" aria-label="Filter records">
+        {recordTabs.map((tab) => (
+          <button
+            className={activeTab === tab.id ? "active" : ""}
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </section>
+      {filteredRecords.length ? (
+        <RecordList items={filteredRecords} />
+      ) : (
+        <div className="state-card loading-brand">
+          <FileText size={28} />
+          <span>No records in this category yet.</span>
+        </div>
+      )}
     </>
   );
 }

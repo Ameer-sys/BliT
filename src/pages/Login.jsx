@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout.jsx";
 import { auth, db } from "../firebase.js";
@@ -11,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleLogin(roleChoice) {
     setStatus("");
@@ -42,7 +44,7 @@ export default function Login() {
     <AuthLayout
       eyebrow="Welcome back"
       title="Sign in to BliT"
-      text="Patients and providers use separate workspaces after sign-in."
+      text="Choose the workspace that matches your account. Your dashboard opens with the right care tools after sign-in."
     >
       <form className="auth-form" onSubmit={(event) => event.preventDefault()}>
         <label>
@@ -57,13 +59,18 @@ export default function Login() {
         </label>
         <label>
           Password
-          <input
-            type="password"
-            value={password}
-            autoComplete="current-password"
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+          <span className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              autoComplete="current-password"
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+            <button type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Hide password" : "Show password"}>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </span>
         </label>
         <div className="split-actions">
           <button type="button" disabled={isSubmitting} onClick={() => handleLogin("patient")}>
@@ -74,7 +81,7 @@ export default function Login() {
           </button>
         </div>
         {status && <p className="helper-text error-text">{status}</p>}
-        <p className="helper-text">Pick the workspace you created this account for.</p>
+        <p className="helper-text">Use patient sign-in for your blister pack, or doctor sign-in for patient management.</p>
       </form>
       <p className="auth-switch">
         Need an account? <Link to="/signup">Create one</Link>

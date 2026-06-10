@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -15,6 +16,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSignup(event) {
     event.preventDefault();
@@ -61,7 +63,7 @@ export default function Signup() {
     <AuthLayout
       eyebrow="Create account"
       title="Join BliT as a patient or doctor"
-      text="For the MVP, anyone can create either account type. Later, doctor accounts can require verification."
+      text="Create a patient workspace for your own care, or a doctor workspace for managing patient medication plans."
     >
       <form className="auth-form" onSubmit={handleSignup}>
         <div className="role-tabs" aria-label="Choose account type">
@@ -96,14 +98,19 @@ export default function Signup() {
         </label>
         <label>
           Password
-          <input
-            type="password"
-            value={password}
-            autoComplete="new-password"
-            minLength={6}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+          <span className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              autoComplete="new-password"
+              minLength={6}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+            <button type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Hide password" : "Show password"}>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </span>
         </label>
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : `Create ${role === "provider" ? "doctor" : "patient"} account`}
@@ -111,7 +118,7 @@ export default function Signup() {
         {status && <p className="helper-text error-text">{status}</p>}
       </form>
       <p className="auth-switch">
-        Already have access? <Link to="/login">Sign in</Link>
+        Already have an account? <Link to="/login">Sign in</Link>
       </p>
     </AuthLayout>
   );

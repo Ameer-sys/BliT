@@ -5,7 +5,7 @@ export default function Welcome() {
   return (
     <main className="welcome-page">
       <nav className="welcome-nav">
-        <Logo compact />
+        <span className="welcome-nav-spacer" aria-hidden="true" />
         <div>
           <Link to="/login">Log in</Link>
           <Link className="dark-link" to="/signup">

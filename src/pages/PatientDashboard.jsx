@@ -7,17 +7,19 @@ import { useAuth } from "../context/AuthContext.jsx";
 import {
   buildDoseSlots,
   getActiveMedications,
+  getDosePockets,
   getDoseLogs,
-  getPatientDosePockets,
   getPatientForUser,
   getRecords,
   markSlotTaken,
+  parseTimeToMinutes,
   skipSlot,
 } from "../lib/firestoreData.js";
 
 export default function PatientDashboard() {
   const { currentUser } = useAuth();
   const [patient, setPatient] = useState(null);
+  const [dosePockets, setDosePockets] = useState([]);
   const [medications, setMedications] = useState([]);
   const [doseLogs, setDoseLogs] = useState([]);
   const [records, setRecords] = useState([]);
@@ -26,10 +28,12 @@ export default function PatientDashboard() {
   const [isSaving, setIsSaving] = useState(false);
 
   const slots = useMemo(
-    () => buildDoseSlots(medications, doseLogs, getPatientDosePockets(patient)),
-    [medications, doseLogs, patient],
+    () => buildDoseSlots(medications, doseLogs, dosePockets),
+    [medications, doseLogs, dosePockets],
   );
-  const nextSlot = slots.find((slot) => slot.meds.length > 0 && !slot.taken);
+  const nextSlot = [...slots]
+    .filter((slot) => slot.meds.length > 0 && ["pending", "partial"].includes(slot.status))
+    .sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time))[0];
   const latestRecord = records[0];
 
   async function loadPatientWorkspace() {
@@ -42,17 +46,20 @@ export default function PatientDashboard() {
       setPatient(patientDoc);
 
       if (!patientDoc) {
+        setDosePockets([]);
         setMedications([]);
         setDoseLogs([]);
         setRecords([]);
         return;
       }
 
-      const [medicationDocs, doseLogDocs, recordDocs] = await Promise.all([
+      const [pocketDocs, medicationDocs, doseLogDocs, recordDocs] = await Promise.all([
+        getDosePockets(patientDoc.id, patientDoc),
         getActiveMedications(patientDoc.id),
         getDoseLogs(patientDoc.id),
         getRecords(patientDoc.id),
       ]);
+      setDosePockets(pocketDocs);
       setMedications(medicationDocs);
       setDoseLogs(doseLogDocs);
       setRecords(recordDocs);
@@ -66,6 +73,30 @@ export default function PatientDashboard() {
   useEffect(() => {
     loadPatientWorkspace();
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!patient || !import.meta.env.DEV) return;
+    console.table(
+      slots.map((slot) => ({
+        patientId: patient.id,
+        pocketId: slot.id,
+        label: slot.label,
+        matchedMedicationCount: slot.meds.length,
+        status: slot.status,
+      })),
+    );
+    console.info("[BliT dose debug]", {
+      patientId: patient.id,
+      loadedPocketsCount: dosePockets.length,
+      loadedMedicationsCount: medications.length,
+      medications: medications.map((medication) => ({
+        id: medication.id,
+        name: medication.name,
+        assignedPocketIds: medication.assignedPocketIds || [],
+        legacyScheduleSlots: medication.scheduleSlots || [],
+      })),
+    });
+  }, [patient, dosePockets, medications, slots]);
 
   async function handleMarkTaken(slot) {
     if (!patient) return;

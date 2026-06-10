@@ -39,23 +39,177 @@ export function pocketIdFor(label) {
   return normalizeSlot(label) || `pocket-${Date.now()}`;
 }
 
-export function getPatientDosePockets(patient) {
-  const custom = Array.isArray(patient?.dosePockets) ? patient.dosePockets : [];
-  const merged = [...SLOT_DEFS, ...custom].reduce((acc, pocket) => {
-    const id = normalizeSlot(pocket.id || pocket.label);
-    if (!id || acc.some((item) => item.id === id)) return acc;
-    acc.push({
-      id,
-      label: pocket.label || id,
-      time: pocket.time || "",
-      frequencyType: pocket.frequencyType || "daily",
-      daysOfWeek: pocket.daysOfWeek || [],
-      notes: pocket.notes || "",
-      startDate: pocket.startDate || "",
+function defaultPocketDocId(patientId, slotId) {
+  return `default_${patientId}_${slotId}`;
+}
+
+function legacyPocketDocId(patientId, labelOrId) {
+  return `legacy_${patientId}_${normalizeSlot(labelOrId)}`;
+}
+
+function normalizePocket(pocket) {
+  const legacySlotId = normalizeSlot(pocket.legacySlotId || pocket.label || pocket.id);
+  return {
+    ...pocket,
+    label: pocket.label || legacySlotId,
+    time: pocket.time || "",
+    frequencyType: pocket.frequencyType || "daily",
+    daysOfWeek: pocket.daysOfWeek || [],
+    notes: pocket.notes || "",
+    active: pocket.active !== false,
+    legacySlotIds: Array.from(
+      new Set([
+        ...(pocket.legacySlotIds || []),
+        pocket.legacySlotId,
+        legacySlotId,
+        normalizeSlot(pocket.label),
+      ].filter(Boolean).map(normalizeSlot)),
+    ),
+  };
+}
+
+export async function getDosePockets(patientId, patient = null) {
+  const snapshot = await getDocs(query(collection(db, "dosePockets"), where("patientId", "==", patientId)));
+  const existingPockets = withId(snapshot).filter((pocket) => pocket.active !== false);
+  const existingLegacyIds = new Set(
+    existingPockets.flatMap((pocket) => [
+      normalizeSlot(pocket.legacySlotId),
+      normalizeSlot(pocket.label),
+      ...(pocket.legacySlotIds || []).map(normalizeSlot),
+    ]),
+  );
+
+  const providerId = patient?.createdByProviderId || patient?.providerId || "";
+  const missingDefaultWrites = SLOT_DEFS.filter((slot) => !existingLegacyIds.has(slot.id)).map((slot) => {
+    const pocketRef = doc(db, "dosePockets", defaultPocketDocId(patientId, slot.id));
+    return setDoc(
+      pocketRef,
+      {
+        patientId,
+        providerId,
+        label: slot.label,
+        time: slot.time,
+        frequencyType: slot.frequencyType,
+        daysOfWeek: slot.daysOfWeek,
+        active: true,
+        legacySlotId: slot.id,
+        legacySlotIds: [slot.id],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  });
+
+  const legacyPatientPockets = Array.isArray(patient?.dosePockets) ? patient.dosePockets : [];
+  const missingLegacyWrites = legacyPatientPockets
+    .filter((pocket) => !existingLegacyIds.has(normalizeSlot(pocket.id || pocket.label)))
+    .map((pocket) => {
+      const legacyId = normalizeSlot(pocket.id || pocket.label);
+      return setDoc(
+        doc(db, "dosePockets", legacyPocketDocId(patientId, legacyId)),
+        {
+          patientId,
+          providerId,
+          label: pocket.label || legacyId,
+          time: pocket.time || "",
+          frequencyType: pocket.frequencyType || "daily",
+          daysOfWeek: pocket.daysOfWeek || [],
+          notes: pocket.notes || "",
+          active: pocket.active !== false,
+          legacySlotId: legacyId,
+          legacySlotIds: [legacyId],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
     });
-    return acc;
-  }, []);
-  return merged;
+
+  if (missingDefaultWrites.length || missingLegacyWrites.length) {
+    await Promise.all([...missingDefaultWrites, ...missingLegacyWrites]);
+    const refreshed = await getDocs(query(collection(db, "dosePockets"), where("patientId", "==", patientId)));
+    return withId(refreshed)
+      .filter((pocket) => pocket.active !== false)
+      .map(normalizePocket)
+      .sort(comparePocketsByTime);
+  }
+
+  return existingPockets.map(normalizePocket).sort(comparePocketsByTime);
+}
+
+export function getPatientDosePockets(patient) {
+  return [
+    ...SLOT_DEFS.map((slot) =>
+      normalizePocket({
+        id: slot.id,
+        ...slot,
+        legacySlotId: slot.id,
+        legacySlotIds: [slot.id],
+      }),
+    ),
+    ...(Array.isArray(patient?.dosePockets) ? patient.dosePockets : []).map(normalizePocket),
+  ];
+}
+
+export async function createDosePocket({ patientId, providerId, values }) {
+  return addDoc(collection(db, "dosePockets"), {
+    patientId,
+    providerId,
+    label: values.label,
+    time: values.time || "",
+    frequencyType: values.frequencyType || "daily",
+    daysOfWeek: values.daysOfWeek || [],
+    notes: values.notes || "",
+    active: true,
+    legacySlotId: normalizeSlot(values.label),
+    legacySlotIds: [normalizeSlot(values.label)],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function updateDosePocket(pocketId, values) {
+  return updateDoc(doc(db, "dosePockets", pocketId), {
+    label: values.label,
+    time: values.time || "",
+    frequencyType: values.frequencyType || "daily",
+    daysOfWeek: values.daysOfWeek || [],
+    notes: values.notes || "",
+    active: values.active !== false,
+    legacySlotIds: Array.from(
+      new Set([...(values.legacySlotIds || []), normalizeSlot(values.label)].filter(Boolean)),
+    ),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteDosePocket(pocketId) {
+  return updateDoc(doc(db, "dosePockets", pocketId), {
+    active: false,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+function comparePocketsByTime(a, b) {
+  return parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time) || String(a.label || "").localeCompare(String(b.label || ""));
+}
+
+export function parseTimeToMinutes(value) {
+  const text = String(value || "").trim();
+  if (!text) return 24 * 60 + 1;
+  const twentyFourHour = text.match(/^(\d{1,2}):(\d{2})$/);
+  if (twentyFourHour) {
+    return Number(twentyFourHour[1]) * 60 + Number(twentyFourHour[2]);
+  }
+  const twelveHour = text.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (twelveHour) {
+    const hour = Number(twelveHour[1]) % 12;
+    const minute = Number(twelveHour[2]);
+    const period = twelveHour[3].toUpperCase();
+    return (period === "PM" ? hour + 12 : hour) * 60 + minute;
+  }
+  return 24 * 60;
 }
 
 function isPocketDueToday(pocket, date = todayKey()) {
@@ -175,13 +329,9 @@ export async function getOrCreatePatientForUser({ patientUser, providerId }) {
 
 export async function getActiveMedications(patientId) {
   const snapshot = await getDocs(
-    query(
-      collection(db, "medications"),
-      where("patientId", "==", patientId),
-      where("status", "==", "active"),
-    ),
+    query(collection(db, "medications"), where("patientId", "==", patientId)),
   );
-  return withId(snapshot);
+  return withId(snapshot).filter((medication) => medication.active !== false && medication.status !== "paused");
 }
 
 export async function getRecords(patientId) {
@@ -208,11 +358,18 @@ export function buildDoseSlots(medications, doseLogs, dosePockets = SLOT_DEFS, d
   );
 
   return pockets.map((slot) => {
-    const slotId = normalizeSlot(slot.id || slot.label);
+    const slotId = slot.id;
+    const matchIds = new Set([slot.id, ...(slot.legacySlotIds || [])].filter(Boolean).map(normalizeSlot));
     const slotMeds = medications
-      .filter((medication) =>
-        (medication.scheduleSlots || []).map(normalizeSlot).includes(slotId),
-      )
+      .filter((medication) => {
+        const assignedPocketIds = (medication.assignedPocketIds || []).map(normalizeSlot);
+        const legacyScheduleSlots = (medication.scheduleSlots || []).map(normalizeSlot);
+        const assignmentIds = [...assignedPocketIds, ...legacyScheduleSlots];
+        const directMatch = assignmentIds.some((id) => matchIds.has(id));
+        const legacyNameMatch =
+          assignmentIds.length === 0 && normalizeSlot(medication.name) === normalizeSlot(slot.label);
+        return directMatch || legacyNameMatch;
+      })
       .map((medication) => ({
         id: medication.id,
         name: medication.name,
@@ -220,7 +377,9 @@ export function buildDoseSlots(medications, doseLogs, dosePockets = SLOT_DEFS, d
         instructions: medication.instructions,
       }));
 
-    const slotLogs = doseLogs.filter((log) => normalizeSlot(log.slot) === slotId);
+    const slotLogs = doseLogs.filter(
+      (log) => log.pocketId === slot.id || matchIds.has(normalizeSlot(log.slot)),
+    );
     const takenLogs = slotLogs.filter((log) => log.status === "taken");
     const skippedLogs = slotLogs.filter((log) => log.status === "skipped");
     const takenMedicationIds = new Set(takenLogs.map((log) => log.medicationId));
@@ -234,7 +393,9 @@ export function buildDoseSlots(medications, doseLogs, dosePockets = SLOT_DEFS, d
           ? "taken"
           : skippedCount === slotMeds.length
             ? "skipped"
-            : "pending";
+            : takenCount > 0 || skippedCount > 0
+              ? "partial"
+              : "pending";
     const latestTaken = takenLogs
       .map((log) => log.takenAt || log.updatedAt || log.createdAt)
       .filter(Boolean)
@@ -243,6 +404,7 @@ export function buildDoseSlots(medications, doseLogs, dosePockets = SLOT_DEFS, d
     return {
       ...slot,
       id: slotId,
+      pocketId: slotId,
       instructions: slotMeds[0]?.instructions || "No medications scheduled for this pocket.",
       meds: slotMeds,
       logs: slotLogs,
@@ -255,18 +417,34 @@ export function buildDoseSlots(medications, doseLogs, dosePockets = SLOT_DEFS, d
 }
 
 export async function writeSlotDoseLog({ patientId, slot, medications, status, date = todayKey() }) {
-  const slotId = normalizeSlot(slot);
-  const writes = medications.map((medication) =>
-    addDoc(collection(db, "doseLogs"), {
+  const pocketId = slot;
+  const existingLogs = await getDoseLogs(patientId, date);
+  const writes = medications.map((medication) => {
+    const existingLog = existingLogs.find(
+      (log) =>
+        log.medicationId === medication.id &&
+        (log.pocketId === pocketId || normalizeSlot(log.slot) === normalizeSlot(pocketId)),
+    );
+    const values = {
       patientId,
       medicationId: medication.id,
+      pocketId,
       date,
-      slot: slotId,
+      slot: pocketId,
       status,
       ...(status === "taken" ? { takenAt: serverTimestamp() } : { skippedAt: serverTimestamp() }),
+      updatedAt: serverTimestamp(),
+    };
+
+    if (existingLog) {
+      return updateDoc(doc(db, "doseLogs", existingLog.id), values);
+    }
+
+    return addDoc(collection(db, "doseLogs"), {
+      ...values,
       createdAt: serverTimestamp(),
-    }),
-  );
+    });
+  });
 
   await Promise.all(writes);
 }
@@ -282,11 +460,14 @@ export function skipSlot(values) {
 export async function createMedication({ patientId, providerId, values }) {
   return addDoc(collection(db, "medications"), {
     patientId,
+    providerId,
     prescribedBy: providerId,
     name: values.name,
     dosage: values.dosage,
     instructions: values.instructions,
-    scheduleSlots: values.scheduleSlots,
+    active: true,
+    assignedPocketIds: values.assignedPocketIds || values.scheduleSlots || [],
+    scheduleSlots: values.assignedPocketIds || values.scheduleSlots || [],
     frequencyType: values.frequencyType || "daily",
     daysOfWeek: values.daysOfWeek || [],
     scheduleNotes: values.scheduleNotes || "",

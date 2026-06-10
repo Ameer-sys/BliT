@@ -1055,6 +1055,13 @@ select {
     linear-gradient(145deg, #ffffff, #fff8eb);
 }
 
+.blister-pocket.partial {
+  border-color: rgba(14, 165, 233, 0.38);
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.96) 0 28%, rgba(224, 242, 254, 0.88) 29% 46%, transparent 47%),
+    linear-gradient(145deg, #ffffff, #f0f9ff);
+}
+
 .blister-pocket.empty {
   opacity: 0.88;
 }
@@ -1118,6 +1125,11 @@ select {
 .skipped .status-chip {
   background: #fef3c7;
   color: #92400e;
+}
+
+.partial .status-chip {
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
 .stack,

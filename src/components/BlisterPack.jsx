@@ -6,6 +6,7 @@ const statusLabels = {
   pending: "Pending",
   taken: "Taken",
   skipped: "Skipped",
+  partial: "Partial",
 };
 
 export default function BlisterPack({ slots, onMarkTaken, onSkip, isSaving, readOnly = false }) {

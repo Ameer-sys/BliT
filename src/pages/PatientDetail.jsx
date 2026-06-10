@@ -6,16 +6,18 @@ import RecordList from "../components/RecordList.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
   buildDoseSlots,
+  createDosePocket,
   createMedication,
   createRecord,
+  deleteDosePocket,
   getActiveMedications,
+  getDosePockets,
   getDoseLogs,
   getPatientById,
-  getPatientDosePockets,
   getRecords,
   uploadRecordFile,
-  pocketIdFor,
   SLOT_DEFS,
+  updateDosePocket,
   updateMedication,
   updatePatient,
 } from "../lib/firestoreData.js";
@@ -25,7 +27,7 @@ const initialMedicationForm = {
   name: "",
   dosage: "",
   instructions: "",
-  scheduleSlots: ["breakfast"],
+  assignedPocketIds: [],
   frequencyType: "daily",
   daysOfWeek: [],
   scheduleNotes: "",
@@ -64,6 +66,7 @@ export default function PatientDetail() {
   const [patient, setPatient] = useState(null);
   const [patientForm, setPatientForm] = useState({ name: "", email: "", phone: "", dob: "" });
   const [medications, setMedications] = useState([]);
+  const [dosePockets, setDosePockets] = useState([]);
   const [doseLogs, setDoseLogs] = useState([]);
   const [records, setRecords] = useState([]);
   const [medicationForm, setMedicationForm] = useState(initialMedicationForm);
@@ -74,16 +77,17 @@ export default function PatientDetail() {
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState("");
   const slots = useMemo(
-    () => buildDoseSlots(medications, doseLogs, getPatientDosePockets(patient)),
-    [medications, doseLogs, patient],
+    () => buildDoseSlots(medications, doseLogs, dosePockets),
+    [medications, doseLogs, dosePockets],
   );
 
   async function loadPatient() {
     setLoading(true);
     setStatus("");
     try {
-      const [patientDoc, medicationDocs, doseLogDocs, recordDocs] = await Promise.all([
-        getPatientById(patientId),
+      const patientDoc = await getPatientById(patientId);
+      const [pocketDocs, medicationDocs, doseLogDocs, recordDocs] = await Promise.all([
+        getDosePockets(patientId, patientDoc),
         getActiveMedications(patientId),
         getDoseLogs(patientId),
         getRecords(patientId),
@@ -95,6 +99,7 @@ export default function PatientDetail() {
         phone: patientDoc?.phone || "",
         dob: patientDoc?.dob || "",
       });
+      setDosePockets(pocketDocs);
       setMedications(medicationDocs);
       setDoseLogs(doseLogDocs);
       setRecords(recordDocs);
@@ -115,12 +120,12 @@ export default function PatientDetail() {
 
   function toggleScheduleSlot(slotId) {
     setMedicationForm((current) => {
-      const hasSlot = current.scheduleSlots.includes(slotId);
+      const hasSlot = current.assignedPocketIds.includes(slotId);
       return {
         ...current,
-        scheduleSlots: hasSlot
-          ? current.scheduleSlots.filter((slot) => slot !== slotId)
-          : [...current.scheduleSlots, slotId],
+        assignedPocketIds: hasSlot
+          ? current.assignedPocketIds.filter((slot) => slot !== slotId)
+          : [...current.assignedPocketIds, slotId],
       };
     });
   }
@@ -147,14 +152,19 @@ export default function PatientDetail() {
     event.preventDefault();
     setIsSaving(true);
     try {
-      const id = pocketIdFor(pocketForm.label);
-      const existing = Array.isArray(patient.dosePockets) ? patient.dosePockets : [];
-      await updatePatient(patientId, {
-        dosePockets: [
-          ...existing.filter((pocket) => pocket.id !== id),
-          { ...pocketForm, id },
-        ],
-      });
+      if (pocketForm.id) {
+        await updateDosePocket(pocketForm.id, pocketForm);
+      } else {
+        const pocketRef = await createDosePocket({
+          patientId,
+          providerId: currentUser.uid,
+          values: pocketForm,
+        });
+        setMedicationForm((current) => ({
+          ...current,
+          assignedPocketIds: Array.from(new Set([...current.assignedPocketIds, pocketRef.id])),
+        }));
+      }
       setPocketForm(initialPocketForm);
       setStatus("Dose pocket saved.");
       await loadPatient();
@@ -168,10 +178,7 @@ export default function PatientDetail() {
   async function handleDeletePocket(pocketId) {
     setIsSaving(true);
     try {
-      const existing = Array.isArray(patient.dosePockets) ? patient.dosePockets : [];
-      await updatePatient(patientId, {
-        dosePockets: existing.filter((pocket) => pocket.id !== pocketId),
-      });
+      await deleteDosePocket(pocketId);
       setStatus("Dose pocket removed.");
       await loadPatient();
     } catch (error) {
@@ -350,14 +357,14 @@ export default function PatientDetail() {
             </div>
           )}
           <div className="checkbox-grid">
-            {getPatientDosePockets(patient).map((slot) => (
+            {dosePockets.map((slot) => (
               <label className="check-option" key={slot.id}>
-                <input type="checkbox" checked={medicationForm.scheduleSlots.includes(slot.id)} onChange={() => toggleScheduleSlot(slot.id)} />
+                <input type="checkbox" checked={medicationForm.assignedPocketIds.includes(slot.id)} onChange={() => toggleScheduleSlot(slot.id)} />
                 {slot.label} {slot.time ? `(${slot.time})` : ""}
               </label>
             ))}
           </div>
-          <button type="submit" disabled={isSaving || medicationForm.scheduleSlots.length === 0}>
+          <button type="submit" disabled={isSaving || medicationForm.assignedPocketIds.length === 0}>
             <CalendarPlus size={18} />
             Add medication
           </button>
@@ -374,7 +381,11 @@ export default function PatientDetail() {
                 <article key={medication.id}>
                   <div>
                     <strong>{medication.name}</strong>
-                    <p>{medication.dosage} - {(medication.scheduleSlots || []).join(", ")}</p>
+                    <p>
+                      {medication.dosage} - {(medication.assignedPocketIds || medication.scheduleSlots || [])
+                        .map((pocketId) => dosePockets.find((pocket) => pocket.id === pocketId)?.label || pocketId)
+                        .join(", ")}
+                    </p>
                   </div>
                   <button type="button" disabled={isSaving} onClick={() => handlePauseMedication(medication.id)}>
                     Pause
@@ -432,8 +443,8 @@ export default function PatientDetail() {
           <p className="eyebrow">Patient schedule</p>
           <h2>Dose pockets</h2>
           <div className="mini-list">
-            {getPatientDosePockets(patient).map((pocket) => {
-              const isDefault = SLOT_DEFS.some((slot) => slot.id === pocket.id);
+            {dosePockets.map((pocket) => {
+              const isDefault = SLOT_DEFS.some((slot) => pocket.legacySlotIds?.includes(slot.id));
               return (
                 <article key={pocket.id}>
                   <div>

@@ -22,6 +22,48 @@ npm run dev
 
 Copy `.env.example` to `.env` and add Firebase project values when you are ready
 to connect real authentication and Firestore data.
+Do not commit `.env`; local Firebase values should stay private.
+
+## Deploy on Vercel
+
+BliT is a Vite app, so use these Vercel project settings:
+
+- Framework preset: `Vite`
+- Build command: `npm run build`
+- Output directory: `dist`
+
+Add these environment variables in Vercel Project Settings before deploying:
+
+```bash
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_FIREBASE_MEASUREMENT_ID=
+```
+
+After the first deploy, add the Vercel domain to Firebase Authentication:
+
+1. Open Firebase Console.
+2. Go to Authentication > Settings > Authorized domains.
+3. Add the generated Vercel domain, and any custom production domain.
+
+The repository includes `vercel.json` with the same build settings:
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite"
+}
+```
+
+## Firestore rules
+
+`firestore.rules` contains prototype/demo-only rules that allow authenticated
+users to read and write. Do not use those rules with real patient data.
 
 ## MVP direction
 
@@ -40,9 +82,10 @@ BliT currently uses Firebase Auth plus Firestore as the backend.
 
 - `users/{uid}`: account profile with `name`, `email`, and `role`
 - `patients/{patientId}`: patient profile with `linkedUserId` and `createdByProviderId`
-- `medications/{medicationId}`: medication plan with `patientId`, `scheduleSlots`, dosage, and instructions
+- `dosePockets/{pocketId}`: dose schedule pocket with `patientId`, label, time, frequency, and active status
+- `medications/{medicationId}`: medication plan with `patientId`, `assignedPocketIds`, dosage, and instructions
 - `records/{recordId}`: health record with `patientId`, type, title, date, and notes
-- `doseLogs/{logId}`: dose event with `patientId`, `medicationId`, date, slot, status, and `takenAt`
+- `doseLogs/{logId}`: dose event with `patientId`, `medicationId`, `pocketId`, date, status, and `takenAt`
 
 For the MVP, anyone can create a patient or doctor account. A doctor adds a
 patient by email, then medications and records created by that doctor appear on

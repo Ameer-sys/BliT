@@ -16,7 +16,7 @@ export default function DoctorShell() {
     <main className="doctor-frame">
       <header className="doctor-topbar">
         <Link to="/provider" aria-label="Doctor dashboard">
-          <Logo />
+          <Logo compact />
         </Link>
         <div className="doctor-actions">
           <span>{userProfile?.name || "Doctor"}</span>

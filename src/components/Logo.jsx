@@ -1,13 +1,15 @@
-export default function Logo({ compact = false }) {
+export function BrandSymbol({ className = "", alt = "" }) {
+  return <img className={`brand-symbol ${className}`.trim()} src="/blit-symbol.png" alt={alt} />;
+}
+
+export default function Logo({ compact = false, stacked = false, className = "" }) {
   return (
-    <div className="logo" aria-label="BliT">
-      <span className="logo-mark">B</span>
-      {!compact && (
-        <span>
-          <strong>BliT</strong>
-          <small>Your health. Connected.</small>
-        </span>
-      )}
+    <div className={`logo ${stacked ? "stacked" : ""} ${className}`.trim()} aria-label="BliT">
+      <BrandSymbol alt="" />
+      <span>
+        <strong>BliT</strong>
+        {!compact && <small>Your health. Connected.</small>}
+      </span>
     </div>
   );
 }

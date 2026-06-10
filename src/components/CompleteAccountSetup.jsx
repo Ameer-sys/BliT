@@ -45,12 +45,12 @@ export default function CompleteAccountSetup() {
   return (
     <main className="setup-page">
       <section className="setup-card">
-        <Logo />
+        <Logo stacked />
         <p className="eyebrow">Complete account setup</p>
         <h1>Choose how this BliT account should work.</h1>
         <p>
-          Firebase Auth already knows you, but Firestore still needs a users/
-          {currentUser.uid} document with a role.
+          Tell BliT whether this account belongs to a patient or a doctor so we
+          can open the right workspace.
         </p>
 
         <div className="role-choice-grid">

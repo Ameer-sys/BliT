@@ -5,8 +5,6 @@ export default function AuthLayout({ children, eyebrow, title, text }) {
   return (
     <main className="auth-page">
       <section className="auth-brand">
-        <Logo />
-        <img className="brand-art small" src="/blit-logo.png" alt="BliT logo: Your health. Connected." />
         <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
         <p>{text}</p>
@@ -24,6 +22,7 @@ export default function AuthLayout({ children, eyebrow, title, text }) {
         </div>
       </section>
       <section className="auth-card">
+        <Logo stacked className="auth-logo" />
         {children}
         <Link className="quiet-link" to="/">
           Back to welcome

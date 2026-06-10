@@ -32,7 +32,7 @@ export default function AppShell() {
   return (
     <main className="app-frame">
       <aside className="side-nav">
-        <Logo />
+        <Logo compact />
         <nav aria-label="Primary navigation">
           {navItems.map((item) => {
             const Icon = item.icon;

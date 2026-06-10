@@ -1,14 +1,9 @@
 import { useEffect, useState } from "react";
 import BackButton from "../components/BackButton.jsx";
+import { BrandSymbol } from "../components/Logo.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getPatientForUser, getPatientsForProvider } from "../lib/firestoreData.js";
-
-function initialsFor(nameOrEmail = "") {
-  const parts = nameOrEmail.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return nameOrEmail.slice(0, 2).toUpperCase() || "BL";
-}
 
 export default function Profile() {
   const { currentUser, role, userProfile } = useAuth();
@@ -70,7 +65,9 @@ export default function Profile() {
       />
       <section className="profile-layout">
         <div className="profile-hero">
-          <div className="avatar">{initialsFor(name)}</div>
+          <div className="avatar">
+            <BrandSymbol alt="BliT medical icon" />
+          </div>
           <h2>{name}</h2>
           <p>{currentUser.email}</p>
         </div>

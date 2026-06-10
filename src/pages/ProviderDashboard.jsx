@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Mail, Search, UserPlus, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import { BrandSymbol } from "../components/Logo.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
   findUserByEmail,
@@ -129,6 +130,7 @@ export default function ProviderDashboard() {
       <section className="doctor-patient-grid">
         {filteredPatients.length === 0 ? (
           <article className="empty-panel">
+            <BrandSymbol className="empty-brand" alt="BliT medical icon" />
             <h2>No patients yet</h2>
             <p>Add a patient by email after they create a BliT patient account.</p>
           </article>
@@ -136,7 +138,7 @@ export default function ProviderDashboard() {
           filteredPatients.map((patient) => (
             <Link className="doctor-patient-card" key={patient.id} to={`/doctor/patients/${patient.id}`}>
               <span className="patient-avatar">
-                {(patient.name || patient.email || "BL").slice(0, 2).toUpperCase()}
+                <BrandSymbol alt="" />
               </span>
               <div>
                 <strong>{patient.name || patient.email}</strong>
